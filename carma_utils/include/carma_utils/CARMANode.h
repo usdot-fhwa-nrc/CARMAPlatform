@@ -19,6 +19,8 @@
 #include <vector>
 #include <exception>
 #include <ros/ros.h>
+#include <mutex>
+#include <memory>
 #include <cav_msgs/SystemAlert.h>
 
 namespace ros {
@@ -36,6 +38,7 @@ namespace ros {
       // Shutdown flags and mutex
       std::mutex shutdown_mutex_;
       bool shutting_down_ = false;
+      std::string system_alert_topic_;
     public:
 
       CARMANode	(	const std::string & 	ns = std::string(),
@@ -97,9 +100,16 @@ namespace ros {
       template<class M , class C >
       Subscriber 	subscribe (const std::string &topic, uint32_t queue_size, const boost::function< void(C)> &callback, const VoidConstPtr &tracked_object=VoidConstPtr(), const TransportHints &transport_hints=TransportHints());
       
-      Subscriber 	subscribe (SubscribeOptions &ops);
 
+      // NOTE: Subscriber subscribe (SubscribeOptions &ops); is not overriden because the target callback cannot be extracted
 
+      template<class M >
+      Publisher advertise (const std::string &topic, uint32_t queue_size, bool latch=false);
+      
+      template<class M >
+      Publisher advertise (const std::string &topic, uint32_t queue_size, const SubscriberStatusCallback &connect_cb, const SubscriberStatusCallback &disconnect_cb=SubscriberStatusCallback(), const VoidConstPtr &tracked_object=VoidConstPtr(), bool latch=false);
+      
+      Publisher advertise (AdvertiseOptions &ops);
 
       private:
       /**
@@ -125,5 +135,13 @@ namespace ros {
       * @brief Shutsdown this node
       */
       void shutdown();
+
+      // TODO
+      bool isRestrictedTopic(const std::string& topic);
+
+      // TODO
+      void checkSubscriptionInput(const std::string& topic);
+
+      void checkPublisherInput(const std::string& topic);
   };
 }

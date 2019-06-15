@@ -37,82 +37,235 @@ namespace ros {
     shutdown(); // Shutdown this node
   }
 
-void CARMANode::shutdown() {
-  std::lock_guard<std::mutex> lock(shutdown_mutex_);
-  ROS_WARN_STREAM("Node shutting down");
-  shutting_down_ = true;
-}
+  void CARMANode::shutdown() {
+    std::lock_guard<std::mutex> lock(shutdown_mutex_);
+    ROS_WARN_STREAM("Node shutting down");
+    shutting_down_ = true;
+  }
+
+  bool CARMANode::isRestrictedTopic(const std::string& topic) {
+    return system_alert_topic_ == topic;
+  }
+
+  void CARMANode::checkSubscriptionInput(const std::string& topic) {
+    if (isRestrictedTopic(topic)) {
+      ROS_WARN_STREAM("User requested subscription to existing CARMANode reserved topic: " << topic);
+    }
+  }
+
+  void CARMANode::checkPublisherInput(const std::string& topic) {
+    if (isRestrictedTopic(topic)) {
+      ROS_WARN_STREAM("User requested publisher to existing CARMANode reserved topic: " << topic);
+    }
+  }
 
   template<class M , class T >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(M), T *obj, const TransportHints &transport_hints=TransportHints()) {
-    NodeHandle::subscribe(topic, queue_size, 
-      [this](const M& msg) -> void {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(M), T *obj, const TransportHints &transport_hints) {
+    
+    checkSubscriptionInput(topic);
+
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &obj, &fp](const M& msg) mutable -> void {
           try {
-            obj->fp(msg);
+            (obj->*fp)(msg);
           }
           catch(const std::exception& e) {
             handleException(e);
           }
       }, 
-      obj, transport_hints);
+      this, transport_hints);
   }
 
   template<class M , class T >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(M) const, T *obj, const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(M) const, T *obj, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &obj, &fp](const M& msg) -> void {
+          try {
+            (obj->*fp)(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      this, transport_hints);
   }
 
   template<class M , class T >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr< M const > &), T *obj, const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr< M const > &), T *obj, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &obj, &fp](const boost::shared_ptr< M const > &msg) mutable -> void {
+          try {
+            (obj->*fp)(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      this, transport_hints);
   }
 
   template<class M , class T >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr< M const > &) const, T *obj, const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr< M const > &) const, T *obj, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &obj, &fp](const boost::shared_ptr< M const > &msg) -> void {
+          try {
+            (obj->*fp)(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      this, transport_hints);
   }
 
   template<class M , class T >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(M), const boost::shared_ptr< T > &obj, const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(M), const boost::shared_ptr< T > &obj, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &obj, &fp](const M& msg) mutable -> void {
+          try {
+            (obj->*fp)(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      this, transport_hints);
   }
 
   template<class M , class T >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(M) const, const boost::shared_ptr< T > &obj, const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(M) const, const boost::shared_ptr< T > &obj, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &obj, &fp](const M& msg) -> void {
+          try {
+            (obj->*fp)(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      this, transport_hints);
   }
 
   template<class M , class T >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr< M const > &), const boost::shared_ptr< T > &obj, const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr< M const > &), const boost::shared_ptr< T > &obj, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &obj, &fp](const boost::shared_ptr< M const > &msg) mutable -> void {
+          try {
+            (obj->*fp)(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      this, transport_hints);
   }
 
   template<class M , class T >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr< M const > &) const, const boost::shared_ptr< T > &obj, const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(T::*fp)(const boost::shared_ptr< M const > &) const, const boost::shared_ptr< T > &obj, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &obj, &fp](const boost::shared_ptr< M const > &msg) -> void {
+          try {
+            (obj->*fp)(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      this, transport_hints);
   }
 
   template<class M >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(*fp)(M), const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(*fp)(M), const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &fp](const M& msg) -> void {
+          try {
+            fp(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      transport_hints);
   }
 
   template<class M >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(*fp)(const boost::shared_ptr< M const > &), const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, void(*fp)(const boost::shared_ptr< M const > &), const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &fp](const boost::shared_ptr< M const > & msg) -> void {
+          try {
+            fp(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      transport_hints);
   }
 
   template<class M >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, const boost::function< void(const boost::shared_ptr< M const > &)> &callback, const VoidConstPtr &tracked_object=VoidConstPtr(), const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, const boost::function< void(const boost::shared_ptr< M const > &)> &callback, const VoidConstPtr &tracked_object, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &callback](const boost::shared_ptr< M const > & msg) -> void {
+          try {
+            callback(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      tracked_object, transport_hints);
   }
 
   template<class M , class C >
-  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, const boost::function< void(C)> &callback, const VoidConstPtr &tracked_object=VoidConstPtr(), const TransportHints &transport_hints=TransportHints()) {
+  Subscriber 	CARMANode::subscribe(const std::string &topic, uint32_t queue_size, const boost::function< void(C)> &callback, const VoidConstPtr &tracked_object, const TransportHints &transport_hints) {
+    checkSubscriptionInput(topic);
 
+    return NodeHandle::subscribe(topic, queue_size, 
+      [this, &callback](C msg) -> void {
+          try {
+            callback(msg);
+          }
+          catch(const std::exception& e) {
+            handleException(e);
+          }
+      }, 
+      tracked_object, transport_hints);
   }
 
-  Subscriber 	CARMANode::subscribe(SubscribeOptions &ops) {
-
+  template<class M >
+  Publisher CARMANode::advertise (const std::string &topic, uint32_t queue_size, bool latch) {
+    checkPublisherInput(topic);
+    return NodeHandle::advertise<M>(topic, queue_size, latch);
+  }
+  
+  template<class M >
+  Publisher CARMANode::advertise (const std::string &topic, uint32_t queue_size, const SubscriberStatusCallback &connect_cb, const SubscriberStatusCallback &disconnect_cb, const VoidConstPtr &tracked_object, bool latch) {
+    checkPublisherInput(topic);
+    return NodeHandle::advertise<M>(topic, queue_size, connect_cb, disconnect_cb, tracked_object, latch);
+  }
+  
+  Publisher CARMANode::advertise (AdvertiseOptions &ops) {
+    checkPublisherInput(ops.topic);
+    return NodeHandle::advertise(ops);
   }
 }
