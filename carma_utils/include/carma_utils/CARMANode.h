@@ -37,8 +37,18 @@ namespace ros {
     private:
       // Shutdown flags and mutex
       std::mutex shutdown_mutex_;
+      std::mutex system_alert_mutex_;
+      std::mutex exception_mutex_;
       bool shutting_down_ = false;
       std::string system_alert_topic_;
+
+
+      std::function<void(const cav_msgs::SystemAlertConstPtr&)> system_alert_cb_;
+
+      std::function<void()> shutdown_cb_;
+
+      std::function<void(const std::exception&)> exception_cb_;
+
     public:
 
       CARMANode	(	const std::string & 	ns = std::string(),
@@ -111,6 +121,35 @@ namespace ros {
       
       Publisher advertise (AdvertiseOptions &ops);
 
+      // TODO we need to override service server as well and maybe actions
+
+      using SystemAlertCB = std::function<void(const cav_msgs::SystemAlertConstPtr&)>;
+      using ShutdownCB = std::function<void()>;
+      using ExceptionCB = std::function<void(const std::exception&)>;
+
+
+      void setSystemAlertCallback(SystemAlertCB cb);
+
+      void setSystemAlertCallback(const CARMANode& cnh);
+
+      void setShutdownCallback(ShutdownCB cb);
+
+      void setShutdownCallback(const CARMANode& cnh);
+
+      void setExceptionCallback(ExceptionCB cb);
+
+      void setExceptionCallback(const CARMANode& cnh);
+
+
+      // TODO think about if we should have a run function
+      // void onSystemAlert();
+
+      // void onSystemAlert(const CARMANode& cnh);
+        // carma_nh_->onSystemAlert(//system alert callback) // Allow each bind to accept a node handle instead. In this case it will delegate the call. This will require check for circular reference
+  // carma_nh_->onShutdown(// shutdown callback)
+  // carma_nh_->onException(// exception callback)
+  // carma_nh_->onRun(// exception callback)
+
       private:
       /**
        * @brief Handles incoming SystemAlert messages
@@ -143,5 +182,12 @@ namespace ros {
       void checkSubscriptionInput(const std::string& topic);
 
       void checkPublisherInput(const std::string& topic);
+
+      template<class C>
+      void validateCallback(const C& cb);
+
+      void validateDelegatedNodeHandle(const CARMANode& cnh);
+
+
   };
 }

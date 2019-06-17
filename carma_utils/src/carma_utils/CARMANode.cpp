@@ -18,6 +18,7 @@
  * CPP File containing BSMConvertor method definitions
  */
 
+#include <sstream>
 #include "carma_utils/CARMANode.h"
 
 
@@ -267,5 +268,56 @@ namespace ros {
   Publisher CARMANode::advertise (AdvertiseOptions &ops) {
     checkPublisherInput(ops.topic);
     return NodeHandle::advertise(ops);
+  }
+
+  template<class C>
+  void CARMANode::validateCallback(const C& cb) {
+    if (!cb) {
+      std::ostringstream msg;
+      msg << "Invalid callback used in CARMANode: Callback does not point to callable object";
+      throw std::invalid_argument(msg.str());
+    }
+  }
+
+  void CARMANode::validateDelegatedNodeHandle(const CARMANode& cnh) {
+    if (&cnh  == this) {
+      std::ostringstream msg;
+      msg << "Attempted to delegate CARMANode callback to itself ";
+      throw std::invalid_argument(msg.str());
+    } 
+  }
+
+  // TODO add mutex for these setters
+  void CARMANode::setSystemAlertCallback(std::function<void(const cav_msgs::SystemAlertConstPtr&)> cb) {
+    std::lock_guard<std::mutex> lock(system_alert_mutex_);
+    validateCallback<SystemAlertCB>(cb);
+    system_alert_cb_ = cb;
+  }
+
+  void CARMANode::setSystemAlertCallback(const CARMANode& cnh) {
+    validateDelegatedNodeHandle(cnh);
+    setSystemAlertCallback(cnh.system_alert_cb_);
+  }
+
+  void CARMANode::setShutdownCallback(std::function<void()> cb) {
+    std::lock_guard<std::mutex> lock(shutdown_mutex_);
+    validateCallback<ShutdownCB>(cb);
+    shutdown_cb_ = cb;
+  }
+
+  void CARMANode::setShutdownCallback(const CARMANode& cnh) {
+    validateDelegatedNodeHandle(cnh);
+    setShutdownCallback(cnh.shutdown_cb_);
+  }
+
+  void CARMANode::setExceptionCallback(std::function<void(const std::exception&)> cb) {
+    std::lock_guard<std::mutex> lock(exception_mutex_);
+    validateCallback<ExceptionCB>(cb);
+    exception_cb_ = cb;
+  }
+
+  void CARMANode::setExceptionCallback(const CARMANode& cnh) {
+    validateDelegatedNodeHandle(cnh);
+    setExceptionCallback(cnh.exception_cb_);
   }
 }
